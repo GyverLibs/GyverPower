@@ -31,16 +31,18 @@ enum sleepprds_t {
 
 /* --- sleep modes --- */
 enum sleepmodes_t {
-    IDLE_SLEEP,
-    ADC_SLEEP,
-    POWERDOWN_SLEEP,
-    EXTSTANDBY_SLEEP = 7,
-#if defined(__AVR_ATtiny84__)
-    STANDBY_SLEEP = 3,
-#else
-    POWERSAVE_SLEEP = 3,
-    STANDBY_SLEEP = 6,
-#endif
+    IDLE_SLEEP	= SLEEP_MODE_IDLE,
+    ADC_SLEEP = SLEEP_MODE_ADC,
+    POWERDOWN_SLEEP = SLEEP_MODE_PWR_DOWN,
+#if defined (SLEEP_MODE_EXT_STANDBY)
+    EXTSTANDBY_SLEEP = SLEEP_MODE_EXT_STANDBY,
+#endif 
+#if defined (SLEEP_MODE_PWR_SAVE)
+    POWERSAVE_SLEEP = SLEEP_MODE_PWR_SAVE,
+#endif 
+#if defined (SLEEP_MODE_STANDBY)
+    STANDBY_SLEEP = SLEEP_MODE_STANDBY
+#endif 
 };
 
 /* --- periphery disable / enable --- */
@@ -70,9 +72,21 @@ enum sleepmodes_t {
 #define PWR_ADC _BV(0)
 #endif
 
-/* --->>> directives <<<--- */
-#if defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny167__)
+/* Спец. переопределения */
+#if defined (WDTIE)
+#define WDIE WDTIE
+#endif
+
+#if defined (WDTCR)
 #define WDTCSR WDTCR
+#endif
+
+/* Поддержка millis-correct */
+#if defined(__AVR_ATmega328P__) \
+|| defined(__AVR_ATmega168__) \
+|| defined(__AVR_ATmega1280__) \
+|| defined(__AVR_ATmega2560__)
+#define MILLIS_CORRECT_IS_SUPPURT
 #endif
 
 #endif

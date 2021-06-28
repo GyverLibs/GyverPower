@@ -35,11 +35,14 @@
     v1.4 - добавлен adjustInternalClock
     v1.5 - совместимость с аттини
     v1.6 - ещё совместимость с аттини
+    v1.7 - оптимизация, совместимость с ATtiny13
 */
 
 #ifndef GyverPower_h
 #define GyverPower_h
 #include <Arduino.h>
+#include <avr/wdt.h>
+#include <avr/sleep.h>
 #include "powerConstants.h"
 
 // =============== ФУНКЦИИ ===============
@@ -66,8 +69,10 @@ private:
     uint8_t sleepMode = 0x2;	// (POWERDOWN_SLEEP по умолчанию)
     uint16_t timeOuts[10] = {16 , 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
 };
+
 extern GyverPower power;
 
+    void _wdt_start(uint8_t timeout);				// Запуск WDT в режиме ISR
 // =============== КОНСТАНТЫ ===============
 
 /* 

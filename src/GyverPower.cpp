@@ -1,11 +1,12 @@
 #include <GyverPower.h>
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+
+#ifdef MILLIS_CORRECT_IS_SUPPURT
 extern volatile unsigned long timer0_millis;
 #endif
 static volatile bool _wdtFlag = false;
 
 void GyverPower::hardwareEnable(uint16_t data) {
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega32U4__)
+#if defined(PRR1)
     PRR1 &= ~ highByte(data); 		// загрузили данные в регистр
     PRR0 &= ~ lowByte(data);
 #else
@@ -22,7 +23,7 @@ void GyverPower::hardwareDisable(uint16_t data) {
         ADCSRA &= ~ (1 << ADEN); 		// выкл ацп
         ACSR |= (1 << ACD); 			// выкл компаратор
     }
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega32U4__)
+#if defined(PRR1)
     PRR1 |= highByte(data); 			// загрузили данные в регистр
     PRR0 |= lowByte(data);
 #else
@@ -44,35 +45,29 @@ void GyverPower::setSleepMode(sleepmodes_t mode) {
 }
 
 uint16_t GyverPower::getMaxTimeout(void){
-    WDTCSR |= (1 << WDCE) | (1 << WDE); 	// разрешаем вмешательство
-    WDTCSR = 0x61; 							// таймаут ~ 8 c
-    asm ("wdr"); 							// сбросили пса
+	_wdt_start(WDTO_8S);					// таймаут ~ 8 c
     _wdtFlag = false;
     uint16_t startTime = millis(); 			// засекли время	
     while (!_wdtFlag); 						// ждем таймаута	
     uint16_t ms = millis() - startTime;
-    WDTCSR |= (1 << WDCE) | (1 << WDE); 	// разрешаем вмешательство
-    WDTCSR = 0; 							// выкл wdt 
-    return  ms;
+    wdt_disable(); 							// выкл wdt 
+    return ms;
 }
 
 void GyverPower::autoCalibrate(void) {
-    WDTCSR |= (1 << WDCE) | (1 << WDE); 	// разрешаем вмешательство
-    WDTCSR = 0x47; 							// таймаут ~ 2 c
-    asm ("wdr"); 							// сбросили пса
+	_wdt_start(WDTO_2S);					// Таймаут ~ 2 c
     _wdtFlag = false;
-    uint16_t startTime = millis(); 			// засекли время
-    while (!_wdtFlag); 						// ждем таймаута
+    uint16_t startTime = millis(); 			// Засекли время
+    while (!_wdtFlag); 						// Ждем таймаута
     uint16_t ms = millis() - startTime;
-    WDTCSR |= (1 << WDCE) | (1 << WDE); 	// разрешаем вмешательство
-    WDTCSR = 0; 							// выкл wdt 
-    for (uint8_t i = 0; i < 9 ; i++) { 		// пересчитываем массив
-        timeOuts[9 - i] = ((ms * 4) >> i);
+    wdt_disable();							// Выкл wdt 
+    for (uint8_t i = 0; i < 9 ; i++) { 		// Пересчитываем массив
+        timeOuts[9 - i] = ((ms * 4) >> i);  
     }
 }
 
-void GyverPower::calibrate(uint16_t ms) { 	// пересчет массива таймаутов
-    for (uint8_t i = 0; i < 9 ; i++) { 		// пересчитываем массив
+void GyverPower::calibrate(uint16_t ms) { 	// Пересчет массива таймаутов
+    for (uint8_t i = 0; i < 9 ; i++) { 		// Пересчитываем массив
         timeOuts[9 - i] = (ms >> i);
     }
 }
@@ -81,59 +76,41 @@ void GyverPower::sleep(uint8_t period) {
 
     /* принудительно выкл АЦП и компаратор */
     if (sleepMode != IDLE_SLEEP && sleepMode != ADC_SLEEP) {
-        ADCSRA &= ~ (1 << ADEN); 			// выкл ацп
-        ACSR |= (1 << ACD); 				// выкл аналог компаратор
+        ADCSRA &= ~ (1 << ADEN); 			// Выкл ацп
+        ACSR |= (1 << ACD); 				// Выкл аналог компаратор
     }
 
-    /* принудительное отключение PLL */
+    /* Принудительное отключение PLL */
 #if defined(__AVR_ATtiny85__)
-    uint8_t pllCopy = PLLCSR; 			// запомнили настройки
-    PLLCSR &= ~ (1 << PLLE); 			// выключили
+    uint8_t pllCopy = PLLCSR; 			// Запомнили настройки
+    PLLCSR &= ~ (1 << PLLE); 			// Выключили
 #endif
 
-    /* если спим с WDT - настраиваем его */
-    if (period < 10) {
-        uint8_t wdtReg = (1 << WDIE); 				// режим прерываний
-        if (period > 7) { 							// если больше 7
-            wdtReg |= (period - 8) | (1 << WDP3); 	// задвигаем делитель
-        }
-        else wdtReg |= period; 						// задвигаем делитель
-        cli();
-        WDTCSR |= (1 << WDCE) | (1 << WDE); 		// разрешаем вмешательство
-        WDTCSR = wdtReg; 							// задвигаем весь регистр
-        sei();
-        asm ("wdr"); 								// сброс пса
+    /* Если спим с WDT - настраиваем его */
+    if (period < 10) {					// Если не бесконечный таймаут
+       _wdt_start(period);				// Настраиваем WDT
     }
 
-    /* настраиваем нужный режим сна */
-#if defined(__AVR_ATtiny85__) ||  defined(__AVR_ATtiny84__)
-    MCUCR |= (sleepMode << 3) | (1 << SE); 	// sleep mode + sleep enable
-#else
-    SMCR = (sleepMode << 1) | (1 << SE); 	// sleep mode + sleep enable
-#endif
+    /* Настраиваем нужный режим сна */
+    set_sleep_mode(sleepMode);
 
-    /* процедура ухода в сон */
-    if (bodEnable) asm ("sleep"); 	//  <<< точка ухода в сон (с БОД)
-    else {
-#if defined(__AVR_ATtiny85__) ||  defined(__AVR_ATtiny84__)
-        MCUCR |= (1 << BODS) | (1 << BODSE); // выкл bod
-        MCUCR = (MCUCR & 0x7B) | (1 << BODS);
-#else
-        MCUCR = (0x03 << 5); // выкл bod
-        MCUCR = (0x02 << 5);
-#endif
-        asm ("sleep"); 				//  <<< точка ухода в сон (без БОД)
+    /* Процедура ухода в сон */
+	sleep_enable(); 				// Разрешаем сон
+    if (bodEnable){
+		interrupts();				// Разрешаем прерывания
+		sleep_cpu (); 	            //  <<< точка ухода в сон (с БОД)
+    } else {
+		noInterrupts();				// Запрет прерываний
+        sleep_bod_disable();		// Выключаем BOD
+		interrupts();				// Разрешаем прерывания
+        sleep_cpu (); 				//  <<< точка ухода в сон (без БОД)
     }
 
-    /* процедура выхода из сна*/
-#if defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny84__)
-    MCUCR = MCUCR & 0xC7; 	// откл сон
-#else
-    SMCR = 0; 				// откл сон
-#endif
+    /* Процедура выхода из сна*/
+    sleep_disable();				// Запрещаем сон
 
-    /* восстановление настроек АЦП */
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega32U4__)
+    /* Восстановление настроек АЦП */
+#if defined(PRR0)
     if (!(PRR0 & (1 << PRADC))) { 		// если ацп не выключен принудительно
         ADCSRA |= (1 << ADEN); 			// вкл после сна
         ACSR &= ~ (1 << ACD);
@@ -144,7 +121,8 @@ void GyverPower::sleep(uint8_t period) {
         ACSR &= ~ (1 << ACD);
     }
 #endif
-    /* восстановление настроек PLL (для тини85) */
+
+    /* Восстановление настроек PLL (для тини85) */
 #if defined(__AVR_ATtiny85__)
     PLLCSR = pllCopy;
 #endif
@@ -159,14 +137,14 @@ uint8_t GyverPower::sleepDelay(uint32_t ms) {
             sleep(i);								// уйти в сон
             ms -= timeOuts[i];						// отнять время сна
             if (wakeFlag) {
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#ifdef MILLIS_CORRECT_IS_SUPPURT
                 if (correct) timer0_millis += saveMs - ms;
 #endif	
                 return ms;
             }
         }
     }
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#ifdef MILLIS_CORRECT_IS_SUPPURT
     if (correct) timer0_millis += saveMs - ms;
 #endif	
     return ms; 										// вернуть остаток времени
@@ -194,11 +172,16 @@ void adjustInternalClock(int8_t adj) {
     SREG = oldSreg;
 }
 
+void _wdt_start(uint8_t timeout){
+	wdt_enable(timeout);					// Таймаут ~ 8 c
+	WDTCSR |= 1 << WDIE;					// Режим ISR+RST	 		
+    wdt_reset();							// Сброс WDT
+}
+
 ISR(WDT_vect) {							// просыпаемся тут
     _wdtFlag = true;					// для калибровки
-    WDTCSR |= (1 << WDCE) | (1 << WDE); // разрешаем вмешательство
-    WDTCSR = 0;							// выключаем пса
-    asm ("wdr");						// обнуляем пса
+    wdt_disable();						// Выкл пса
+	wdt_reset();
 }
 
 GyverPower power = GyverPower();
