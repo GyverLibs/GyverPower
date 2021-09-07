@@ -100,9 +100,11 @@ void GyverPower::sleep(uint8_t period) {
 		interrupts();				// Разрешаем прерывания
 		sleep_cpu (); 	            //  <<< точка ухода в сон (с БОД)
     } else {
+#if defined(sleep_bod_disable)
 		noInterrupts();				// Запрет прерываний
         sleep_bod_disable();		// Выключаем BOD
 		interrupts();				// Разрешаем прерывания
+#endif
         sleep_cpu (); 				//  <<< точка ухода в сон (без БОД)
     }
 
