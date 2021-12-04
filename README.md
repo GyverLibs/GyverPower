@@ -11,7 +11,7 @@ GyverPower - библиотека для управления энергопот
     - ADC		
 - Сон в разных режимах (список ниже)		
 - Сон на любой период
-    - Калибровка таймера для точных периодов сна
+    - Калибровка таймера для точного времени сна
     - Корректировка millis()		
 
 ### Совместимость
@@ -49,29 +49,31 @@ GyverPower - библиотека для управления энергопот
 <a id="usage"></a>
 ## Использование
 ```cpp
-void hardwareEnable(uint16_t data);         // включение указанной периферии (см. ниже "Константы периферии")
-void hardwareDisable(uint16_t data);        // выключение указанной периферии (см. ниже "Константы периферии")
-void setSystemPrescaler(prescalers_t prescaler);    // установка делителя системной частоты (см. ниже "Константы делителя")
-void bodInSleep(bool en);                   // Brown-out detector в режиме сна (true вкл - false выкл) по умолч. отключен!
-void setSleepMode(sleepmodes_t mode);       // установка текущего режима сна (см. ниже "Режимы сна")
-void autoCalibrate(void);                   // автоматическая калибровка таймера сна, выполняется 2 секунды
-uint16_t getMaxTimeout(void);               // возвращает реальный период "8 секунд", выполняется ~8 секунд
-void calibrate(uint16_t ms);                // ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
-void sleep(sleepprds_t period);             // сон на фиксированный период (см. ниже "Периоды сна")
-uint8_t sleepDelay(uint32_t ms);            // сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
-void correctMillis(bool state);             // корректировать миллис на время сна sleepDelay() (по умолчанию включено)
-void wakeUp(void);                          // помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)  
-void adjustInternalClock(int8_t adj);       // подстройка частоты внутреннего генератора (число -120...+120)
+void hardwareEnable(uint16_t data);             // включение указанной периферии (см. ниже "Константы периферии")
+void hardwareDisable(uint16_t data);            // выключение указанной периферии (см. ниже "Константы периферии")
+void setSystemPrescaler(prescalers_t prescaler);// установка делителя системной частоты (см. ниже "Константы делителя")
+void adjustInternalClock(int8_t adj);           // подстройка частоты внутреннего генератора (число -120...+120)
 
-// РЕЖИМЫ СНА для setSleepMode()  
-IDLE_SLEEP - Легкий сон, отключается только клок CPU и Flash, просыпается от любых прерываний
-ADC_SLEEP - Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)  
-POWERDOWN_SLEEP - Наиболее глубокий сон, отключается всё кроме WDT и внешних прерываний, просыпается от аппаратных (обычных + PCINT) или WDT за 1000 тактов (62 мкс)
-STANDBY_SLEEP - Глубокий сон, идентичен POWERDOWN_SLEEP + system clock активен, пробуждение за 6 тактов (0.4 мкс)
-POWERSAVE_SLEEP - Глубокий сон, идентичен POWERDOWN_SLEEP + timer 2 активен (+ можно проснуться от его прерываний), можно использовать для счета времени (см. пример powersaveMillis)
-EXTSTANDBY_SLEEP - Глубокий сон, идентичен POWERSAVE_SLEEP + system clock активен, пробуждение за 6 тактов (0.4 мкс)
+void bodInSleep(bool en);                       // Brown-out detector в режиме сна (true вкл - false выкл) по умолч. отключен!
+void setSleepMode(sleepmodes_t mode);           // установка текущего режима сна (см. ниже "Режимы сна")
+void setSleepResolution(uint8_t period);        // установить разрешение сна (см. ниже "Периоды сна")
 
-// ПЕРИОДЫ СНА для sleep()  
+void autoCalibrate(void);                       // автоматическая калибровка таймера сна, выполняется 16 мс
+void sleep(uint8_t period);                     // сон на фиксированный период (см. ниже "Периоды сна")
+uint8_t sleepDelay(uint32_t ms);                // сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
+void correctMillis(bool state);                 // корректировать миллис на время сна sleepDelay() (по умолчанию включено)
+void wakeUp(void);                              // помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)	
+```
+```cpp
+===== РЕЖИМЫ СНА для setSleepMode() =====
+IDLE_SLEEP          - Легкий сон, отключается только клок CPU и Flash, просыпается мгновенно от любых прерываний
+ADC_SLEEP           - Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)
+EXTSTANDBY_SLEEP    - Глубокий сон, идентичен POWERSAVE_SLEEP + system clock активен
+STANDBY_SLEEP       - Глубокий сон, идентичен POWERDOWN_SLEEP + system clock активен
+POWERSAVE_SLEEP     - Глубокий сон, идентичен POWERDOWN_SLEEP + timer 2 активен (+ можно проснуться от его прерываний), можно использовать для счета времени (см. пример powersaveMillis)
+POWERDOWN_SLEEP     - Наиболее глубокий сон, отключается всё кроме WDT и внешних прерываний, просыпается от аппаратных (обычных + PCINT) или WDT
+
+===== ПЕРИОДЫ СНА для sleep() и setSleepResolution() =====
 SLEEP_16MS
 SLEEP_32MS
 SLEEP_64MS
@@ -82,9 +84,9 @@ SLEEP_1024MS
 SLEEP_2048MS
 SLEEP_4096MS
 SLEEP_8192MS
-SLEEP_FOREVER  - вечный сон без таймера
+SLEEP_FOREVER	- вечный сон
 
-// КОНСТАНТЫ ДЕЛИТЕЛЯ для setSystemPrescaler()
+===== КОНСТАНТЫ ДЕЛИТЕЛЯ для setSystemPrescaler() =====
 PRESCALER_1
 PRESCALER_2
 PRESCALER_4
@@ -95,44 +97,60 @@ PRESCALER_64
 PRESCALER_128
 PRESCALER_256
 
-// КОНСТАНТЫ ПЕРИФЕРИИ для hardwareDisable() и hardwareEnable()  
-PWR_ALL    - всё железо
-PWR_ADC    - АЦП и компаратор
-PWR_TIMER1  - Таймер 0
-PWR_TIMER0  - Таймер 1
-PWR_TIMER2  - Таймер 2
-PWR_TIMER3  - Таймер 3
-PWR_TIMER4  - Таймер 4
-PWR_TIMER5  - Таймер 5  
-PWR_UART0  - Serial 0
-PWR_UART1  - Serial 1
-PWR_UART2  - Serial 2
-PWR_UART3  - Serial 3
-PWR_I2C    - Wire
-PWR_SPI    - SPI
-PWR_USB    - USB  
-PWR_USI    - Wire + Spi (ATtinyXX)
-PWR_LIN    - USART LIN (ATtinyXX)
+===== КОНСТАНТЫ ПЕРИФЕРИИ для hardwareDisable() и hardwareEnable() =====
+PWR_ALL		- всё железо
+PWR_ADC		- АЦП и компаратор
+PWR_TIMER1	- Таймер 0
+PWR_TIMER0	- Таймер 1
+PWR_TIMER2	- Таймер 2
+PWR_TIMER3	- Таймер 3
+PWR_TIMER4	- Таймер 4
+PWR_TIMER5	- Таймер 5	
+PWR_UART0	- Serial 0
+PWR_UART1	- Serial 1
+PWR_UART2	- Serial 2
+PWR_UART3	- Serial 3
+PWR_I2C		- Wire
+PWR_SPI		- SPI
+PWR_USB		- USB	
+PWR_USI		- Wire + Spi (ATtinyXX)
+PWR_LIN		- USART LIN (ATtinyXX)
 ```
+
+### Простой сон
+- Режим сна настраивается в `power.setSleepMode()`, по умолчанию активен `POWERDOWN_SLEEP` (остальные см. выше). 
+- Чтобы уснуть - вызываем `power.sleep()` с указанием одного из стандартных периодов (см. выше). 
+- Реальное время сна будет слегка отличаться, так как "таймер сна" не очень точный. 
+
+### Сон на любой период
+- Режим сна настраивается в `power.setSleepMode()`, по умолчанию активен `POWERDOWN_SLEEP` (остальные см. выше). 
+- Чтобы уснуть - вызываем `power.sleepDelay()` с указанием периода в миллисекундах (`uint32_t`, до ~50 суток). 
+*Как это работает? Просто цикл со стандартными периодами сна внутри этой функции.* 
+- По умолчанию данная функция "спит" периодами по 128 миллисекунд. Время бодрствования между периодами сна составляет около 2.2 мкс (при 16 Мгц), 
+что составляет 0.0017% от времени сна. Соответственно точность времени сна кратна одному периоду сна. Этот период можно настроить в 
+`power.setSleepResolution()`, которая принимает те же константы, что и `sleep()`. Если нужен более точный сон - можно поставить 16 мс (`SLEEP_16MS`), 
+если максимальное энергосбережение - 8 секунд (`SLEEP_8192MS`).
+- Для преждевременного пробуждения по прерыванию нужно обязательно вызвать `power.wakeUp()` внутри обработчика прерывания. 
+- Сон `sleepDelay()` имеет две очень полезные возможности:
+  - Сон на очень точный период при откалиброванном таймере (см. ниже)
+  - Сохранение счёта времени `millis()` на время сна (см. пример sleeptime)
+
+### Калибровка таймера
+В версии 2.0 библиотеки калибровка была упрощена: достаточно вызвать `power.autoCalibrate()` при запуске микроконтроллера. Функция выполняется ~16 мс. 
+**Внимание! power.setSleepResolution() нужно вызывать после калибровки таймера.**
 
 <a id="example"></a>
 ## Пример
 Остальные примеры смотри в **examples**!
 ```cpp
 // демо возможностей библиотеки
-
 #include <GyverPower.h>
 
 void setup() {
   pinMode(13, OUTPUT); // настраиваем вывод со светодиодом на выход
   Serial.begin(9600);
 
-  // калибровка таймаутов для максимальной точности sleepDelay (подробнее в примере WDT_calibration)
-  //Serial.println(getMaxTimeout());  // вывести реальный макс. период
-  //calibrate(8935); 			            // ввести реальный макс. период
-  //calibrate(getMaxTimeout());       // автоматически посчитать и откалибровать
-  
-  power.autoCalibrate(); // автоматическая калибровка ~ 2 секунды , средняя но достаточная точность
+  power.autoCalibrate(); // автоматическая калибровка
 
   // отключение ненужной периферии
   power.hardwareDisable(PWR_ADC | PWR_TIMER1); // см раздел константы в GyverPower.h, разделяющий знак " | "
@@ -142,7 +160,7 @@ void setup() {
   
   // настройка параметров сна
   power.setSleepMode(STANDBY_SLEEP); // если нужен другой режим сна, см константы в GyverPower.h (по умолчанию POWERDOWN_SLEEP)
-  power.bodInSleep(false); // рекомендуется выключить bod во сне для сохранения энергии (по умолчанию false - выключен!!)
+  //power.bodInSleep(false); // рекомендуется выключить bod во сне для сохранения энергии (по умолчанию false - уже выключен!!)
 
   // пример однократного ухода в сон
   Serial.println("go to sleep");
@@ -156,9 +174,8 @@ void setup() {
 
 void loop() {
   // пример циклического сна
-  power.sleepDelay(1500); // спим 1.5 секунды
-  
-  digitalWrite(13, !digitalRead(13)); // инвертируем состояние на пине
+  power.sleepDelay(1500);               // спим 1.5 секунды
+  digitalWrite(13, !digitalRead(13));   // инвертируем состояние на пине
 }
 ```
 
@@ -171,6 +188,7 @@ void loop() {
 - v1.6 - ещё совместимость с аттини
 - v1.7 - оптимизация, совместимость с ATtiny13
 - v1.8 - совместимость с ATmega32U4
+- v2.0 - оптимизация памяти, переделан sleepDelay, можно точно узнать фактическое время сна
 
 <a id="feedback"></a>
 ## Баги и обратная связь

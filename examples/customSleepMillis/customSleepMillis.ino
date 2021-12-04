@@ -7,7 +7,7 @@
 uint32_t myMillis = 0;  // наш миллис
 
 void setup() {
-  power.autoCalibrate(); // автоматическая калибровка ~2 секунды
+  power.autoCalibrate(); // автоматическая калибровка
 }
 
 void loop() {

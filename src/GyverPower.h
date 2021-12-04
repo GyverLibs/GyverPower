@@ -12,7 +12,7 @@
         - ADC		
     - Сон в разных режимах (список ниже)		
     - Сон на любой период
-        - Калибровка таймера для точных периодов сна
+        - Калибровка таймера для точного времени сна
         - Корректировка millis()		
     - Поддерживаемые МК
         - Atmega2560/32u4/328
@@ -37,10 +37,11 @@
     v1.6 - ещё совместимость с аттини
     v1.7 - оптимизация, совместимость с ATtiny13
     v1.8 - совместимость с ATmega32U4
+    v2.0 - оптимизация памяти, переделан sleepDelay, можно точно узнать фактическое время сна
 */
 
-#ifndef GyverPower_h
-#define GyverPower_h
+#ifndef _GyverPower_h
+#define _GyverPower_h
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include <avr/sleep.h>
@@ -52,44 +53,52 @@ public:
     void hardwareEnable(uint16_t data);				// включение указанной периферии (см. ниже "Константы периферии")
     void hardwareDisable(uint16_t data);			// выключение указанной периферии (см. ниже "Константы периферии")
     void setSystemPrescaler(prescalers_t prescaler);// установка делителя системной частоты (см. ниже "Константы делителя")
+    void adjustInternalClock(int8_t adj);     		// подстройка частоты внутреннего генератора (число -120...+120)
+    
     void bodInSleep(bool en);						// Brown-out detector в режиме сна (true вкл - false выкл) по умолч. отключен!
     void setSleepMode(sleepmodes_t mode);			// установка текущего режима сна (см. ниже "Режимы сна")
-    void autoCalibrate(void);						// автоматическая калибровка таймера сна, выполняется 2 секунды
-    uint16_t getMaxTimeout(void);					// возвращает реальный период "8 секунд", выполняется ~8 секунд
-    void calibrate(uint16_t ms);					// ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
+    void setSleepResolution(uint8_t period);        // установить разрешение сна (см. ниже "Периоды сна")
+    
+    void autoCalibrate(void);						// автоматическая калибровка таймера сна, выполняется 16 мс
     void sleep(uint8_t period);						// сон на фиксированный период (см. ниже "Периоды сна")
     uint8_t sleepDelay(uint32_t ms);				// сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
     void correctMillis(bool state);					// корректировать миллис на время сна sleepDelay() (по умолчанию включено)
     void wakeUp(void);								// помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)	
-    void adjustInternalClock(int8_t adj);     		// подстройка частоты внутреннего генератора (число -120...+120)
-
+    
+    // устарело
+    void calibrate(uint16_t ms);					// ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
+    uint16_t getMaxTimeout(void);					// возвращает реальный период "8 секунд", выполняется ~8 секунд
+    
 private:
+    void prepareSleep();
+    void goSleep(uint8_t period);
+    void finishSleep();
+    void _wdt_start(uint8_t timeout);
+    
     volatile bool wakeFlag = false;
     bool correct = true;
     bool bodEnable = false;
     uint8_t sleepMode = 0x2;	// (POWERDOWN_SLEEP по умолчанию)
-    uint16_t timeOuts[10] = {16 , 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
+    
+    //uint16_t timeOuts[10] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
+    uint16_t us16 = 16000, step = 128;
+    uint8_t fstep = 0, fcount = 0;
+    uint8_t slpPrd = 3;
 };
 
 extern GyverPower power;
 
-    void _wdt_start(uint8_t timeout);				// Запуск WDT в режиме ISR
 // =============== КОНСТАНТЫ ===============
-
 /* 
-    РЕЖИМЫ СНА для setSleepMode()
-    
-    IDLE_SLEEP			- Легкий сон, отключается только клок CPU и Flash, просыпается мгновенно от любых прерываний
-    ADC_SLEEP			- Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)	
-    POWERDOWN_SLEEP		- Наиболее глубокий сон, отключается всё кроме WDT и внешних прерываний, просыпается от аппаратных (обычных + PCINT) или WDT, пробуждение за 1000 тактов (62 мкс)
-    STANDBY_SLEEP		- Глубокий сон, идентичен POWERDOWN_SLEEP + system clock активен, пробуждение за 6 тактов (0.4 мкс)
-    POWERSAVE_SLEEP		- Глубокий сон, идентичен POWERDOWN_SLEEP + timer 2 активен (+ можно проснуться от его прерываний), можно использовать для счета времени (см. пример powersaveMillis)
-    EXTSTANDBY_SLEEP	- Глубокий сон, идентичен POWERSAVE_SLEEP + system clock активен, пробуждение за 6 тактов (0.4 мкс)
-*/
+    ===== РЕЖИМЫ СНА для setSleepMode() =====
+    IDLE_SLEEP          - Легкий сон, отключается только клок CPU и Flash, просыпается мгновенно от любых прерываний
+    ADC_SLEEP           - Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)
+    EXTSTANDBY_SLEEP    - Глубокий сон, идентичен POWERSAVE_SLEEP + system clock активен
+    STANDBY_SLEEP       - Глубокий сон, идентичен POWERDOWN_SLEEP + system clock активен
+    POWERSAVE_SLEEP     - Глубокий сон, идентичен POWERDOWN_SLEEP + timer 2 активен (+ можно проснуться от его прерываний), можно использовать для счета времени (см. пример powersaveMillis)
+    POWERDOWN_SLEEP     - Наиболее глубокий сон, отключается всё кроме WDT и внешних прерываний, просыпается от аппаратных (обычных + PCINT) или WDT
 
-/* 
-    ПЕРИОДЫ СНА для sleep()
-    
+    ===== ПЕРИОДЫ СНА для sleep() и setSleepResolution() =====
     SLEEP_16MS
     SLEEP_32MS
     SLEEP_64MS
@@ -100,12 +109,9 @@ extern GyverPower power;
     SLEEP_2048MS
     SLEEP_4096MS
     SLEEP_8192MS
-    SLEEP_FOREVER	- вечный сон без таймера
-*/
+    SLEEP_FOREVER	- вечный сон
 
-/* 
-    КОНСТАНТЫ ДЕЛИТЕЛЯ для setSystemPrescaler()
-    
+    ===== КОНСТАНТЫ ДЕЛИТЕЛЯ для setSystemPrescaler() =====
     PRESCALER_1
     PRESCALER_2
     PRESCALER_4
@@ -115,11 +121,8 @@ extern GyverPower power;
     PRESCALER_64
     PRESCALER_128
     PRESCALER_256
-*/
 
-/* 
-    КОНСТАНТЫ ПЕРИФЕРИИ для hardwareDisable() и hardwareEnable()
-    
+    ===== КОНСТАНТЫ ПЕРИФЕРИИ для hardwareDisable() и hardwareEnable() =====
     PWR_ALL		- всё железо
     PWR_ADC		- АЦП и компаратор
     PWR_TIMER1	- Таймер 0

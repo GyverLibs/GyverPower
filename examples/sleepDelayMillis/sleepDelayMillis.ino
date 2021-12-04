@@ -6,17 +6,9 @@
 
 void setup() {
   Serial.begin(9600);
-  Serial.print("calibraion... ");
-  
-  power.autoCalibrate(); // автоматическая калибровка таймера сна (чтобы спал точное время)
-  // выполняется ~2 секунды
-  // см. пример WDT_calibration
-
-  Serial.println("done");
-  delay(50);
+  power.autoCalibrate(); // автоматическая калибровка таймера сна
 
   // по умолчанию стоит самый экономный режим сна POWER DOWN
-  
   // power.correctMillis(false); // можно отключить коррекцию миллис (по умолч. включена)
 }
 

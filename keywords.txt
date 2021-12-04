@@ -14,16 +14,20 @@ GyverPower	KEYWORD1
 hardwareEnable	KEYWORD2
 hardwareDisable	KEYWORD2
 setSystemPrescaler	KEYWORD2
+adjustInternalClock	KEYWORD2
+
 bodInSleep	KEYWORD2
 setSleepMode	KEYWORD2
+setSleepResolution	KEYWORD2
 autoCalibrate	KEYWORD2
-getMaxTimeout	KEYWORD2
-calibrate	KEYWORD2
+correctMillis	KEYWORD2
+
 sleep	KEYWORD2
 sleepDelay	KEYWORD2
-correctMillis	KEYWORD2
 wakeUp	KEYWORD2
-adjustInternalClock	KEYWORD2
+
+getMaxTimeout	KEYWORD2
+calibrate	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
