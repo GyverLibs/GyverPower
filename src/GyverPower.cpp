@@ -75,7 +75,7 @@ void GyverPower::autoCalibrate() {
     us16 = micros() - us;
 }
 
-uint16_t GyverPower::getMaxTimeout(void) {}
+uint16_t GyverPower::getMaxTimeout(void) {return 8000;}
 void GyverPower::calibrate(uint16_t ms) { autoCalibrate(); }
 
 // ===================== СОН =====================
@@ -93,7 +93,9 @@ void GyverPower::setSleepResolution(uint8_t prd) {
 }
 
 uint8_t GyverPower::sleepDelay(uint32_t ms) {
+#ifdef MILLIS_CORRECT_IS_SUPPURT
     uint32_t saveMs = ms;
+#endif
     wakeFlag = false;
     fcount = 0;
     prepareSleep();
