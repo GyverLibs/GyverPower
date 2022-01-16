@@ -39,6 +39,7 @@
     v1.8 - совместимость с ATmega32U4
     v2.0 - оптимизация памяти, переделан sleepDelay, можно точно узнать фактическое время сна
 	v2.0.1 - fix compiler warnings
+    v2.0.2 - исправлена ошибка компиляции ATtiny85
 */
 
 #ifndef _GyverPower_h
@@ -85,6 +86,9 @@ private:
     uint16_t us16 = 16000, step = 128;
     uint8_t fstep = 0, fcount = 0;
     uint8_t slpPrd = 3;
+#if defined(__AVR_ATtiny85__)
+    uint8_t pllCopy;
+#endif
 };
 
 extern GyverPower power;

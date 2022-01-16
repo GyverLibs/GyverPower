@@ -136,7 +136,7 @@ void GyverPower::prepareSleep() {
 
     // Принудительное отключение PLL
 #if defined(__AVR_ATtiny85__)
-    uint8_t pllCopy = PLLCSR;       // Запомнили настройки
+    pllCopy = PLLCSR;       // Запомнили настройки
     PLLCSR &= ~ (1 << PLLE);        // Выключили
 #endif
 }
