@@ -40,6 +40,7 @@
     v2.0 - оптимизация памяти, переделан sleepDelay, можно точно узнать фактическое время сна
 	v2.0.1 - fix compiler warnings
     v2.0.2 - исправлена ошибка компиляции ATtiny85
+    v2.1 - добавлена bool inSleep(), для проверки спит ли МК
 */
 
 #ifndef _GyverPower_h
@@ -66,6 +67,7 @@ public:
     uint8_t sleepDelay(uint32_t ms);				// сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
     void correctMillis(bool state);					// корректировать миллис на время сна sleepDelay() (по умолчанию включено)
     void wakeUp(void);								// помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)	
+    bool inSleep(void);                             // вернёт true, если МК спит (для проверки в прерывании)
     
     // устарело
     void calibrate(uint16_t ms);					// ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
@@ -78,6 +80,7 @@ private:
     void _wdt_start(uint8_t timeout);
     
     volatile bool wakeFlag = false;
+    volatile bool sleepF = 0;
     bool correct = true;
     bool bodEnable = false;
     uint8_t sleepMode = 0x2;	// (POWERDOWN_SLEEP по умолчанию)

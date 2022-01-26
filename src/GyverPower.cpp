@@ -126,8 +126,13 @@ void GyverPower::wakeUp(void) {
     wakeFlag = true;
 }
 
+bool GyverPower::inSleep(void) {
+    return sleepF;
+}
+
 // ===================== PRIVATE =====================
 void GyverPower::prepareSleep() {
+    sleepF = 1;
     // принудительно выкл АЦП и компаратор
     if (sleepMode != IDLE_SLEEP && sleepMode != ADC_SLEEP) {
         ADCSRA &= ~ (1 << ADEN);    // Выкл ацп
@@ -177,6 +182,7 @@ void GyverPower::finishSleep() {
 #if defined(__AVR_ATtiny85__)
     PLLCSR = pllCopy;
 #endif
+    sleepF = 0;
 }
 
 void GyverPower::_wdt_start(uint8_t timeout) {
