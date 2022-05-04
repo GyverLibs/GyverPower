@@ -1,3 +1,5 @@
+This is an automatic translation, may be incorrect in some places. See sources and examples!
+
 # GyverPower
 GyverPower - library for power management of MK AVR
 - System clock management
