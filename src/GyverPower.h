@@ -41,6 +41,7 @@
 	v2.0.1 - fix compiler warnings
     v2.0.2 - исправлена ошибка компиляции ATtiny85
     v2.1 - добавлена bool inSleep(), для проверки спит ли МК
+    v2.2 - улучшена стабильность
 */
 
 #ifndef _GyverPower_h

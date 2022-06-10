@@ -109,14 +109,24 @@ uint8_t GyverPower::sleepDelay(uint32_t ms) {
         }
         if (wakeFlag) {
 #ifdef MILLIS_CORRECT_IS_SUPPURT
-            if (correct) timer0_millis += saveMs - ms;
+            if (correct) {
+                uint8_t oldSREG = SREG;
+                cli();
+                timer0_millis += saveMs - ms;
+                SREG = oldSREG;
+            }
 #endif	
             finishSleep();
             return ms;
         }
     }
 #ifdef MILLIS_CORRECT_IS_SUPPURT
-    if (correct) timer0_millis += saveMs - ms;
+    if (correct) {
+        uint8_t oldSREG = SREG;
+        cli();
+        timer0_millis += saveMs - ms;
+        SREG = oldSREG;
+    }
 #endif
     finishSleep();
     return ms;      // вернуть остаток времени
