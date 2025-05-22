@@ -1,10 +1,8 @@
-[![latest](https://img.shields.io/github/v/release/GyverLibs/GyverPower.svg?color=brightgreen)](https://github.com/GyverLibs/GyverPower/releases/latest/download/GyverPower.zip)
-[![PIO](https://badges.registry.platformio.org/packages/gyverlibs/library/GyverPower.svg)](https://registry.platformio.org/libraries/gyverlibs/GyverPower)
+[![Foo](https://img.shields.io/badge/Version-2.2-brightgreen.svg?style=flat-square)](#versions)
 [![Foo](https://img.shields.io/badge/Website-AlexGyver.ru-blue.svg?style=flat-square)](https://alexgyver.ru/)
-[![Foo](https://img.shields.io/badge/%E2%82%BD%24%E2%82%AC%20%D0%9F%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-%D0%B0%D0%B2%D1%82%D0%BE%D1%80%D0%B0-orange.svg?style=flat-square)](https://alexgyver.ru/support_alex/)
-[![Foo](https://img.shields.io/badge/README-ENGLISH-blueviolet.svg?style=flat-square)](https://github-com.translate.goog/GyverLibs/GyverPower?_x_tr_sl=ru&_x_tr_tl=en)  
+[![Foo](https://img.shields.io/badge/%E2%82%BD$%E2%82%AC%20%D0%9D%D0%B0%20%D0%BF%D0%B8%D0%B2%D0%BE-%D1%81%20%D1%80%D1%8B%D0%B1%D0%BA%D0%BE%D0%B9-orange.svg?style=flat-square)](https://alexgyver.ru/support_alex/)
 
-[![Foo](https://img.shields.io/badge/ПОДПИСАТЬСЯ-НА%20ОБНОВЛЕНИЯ-brightgreen.svg?style=social&logo=telegram&color=blue)](https://t.me/GyverLibs)
+[![Foo](https://img.shields.io/badge/README-ENGLISH-brightgreen.svg?style=for-the-badge)](https://github-com.translate.goog/GyverLibs/GyverPower?_x_tr_sl=ru&_x_tr_tl=en)
 
 # GyverPower
 GyverPower - библиотека для управления энергопотреблением МК AVR
@@ -28,53 +26,32 @@ GyverPower - библиотека для управления энергопот
 К библиотеке есть [расширенная документация](https://alexgyver.ru/GyverPower/)
 
 ## Содержание
-- [Установка](#install)
-- [Инициализация](#init)
 - [Использование](#usage)
 - [Пример](#example)
+- [Установка](#install)
 - [Версии](#versions)
 - [Баги и обратная связь](#feedback)
 
-<a id="install"></a>
-## Установка
-- Библиотеку можно найти по названию **GyverPower** и установить через менеджер библиотек в:
-    - Arduino IDE
-    - Arduino IDE v2
-    - PlatformIO
-- [Скачать библиотеку](https://github.com/GyverLibs/GyverPower/archive/refs/heads/main.zip) .zip архивом для ручной установки:
-    - Распаковать и положить в *C:\Program Files (x86)\Arduino\libraries* (Windows x64)
-    - Распаковать и положить в *C:\Program Files\Arduino\libraries* (Windows x32)
-    - Распаковать и положить в *Документы/Arduino/libraries/*
-    - (Arduino IDE) автоматическая установка из .zip: *Скетч/Подключить библиотеку/Добавить .ZIP библиотеку…* и указать скачанный архив
-- Читай более подробную инструкцию по установке библиотек [здесь](https://alexgyver.ru/arduino-first/#%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0_%D0%B1%D0%B8%D0%B1%D0%BB%D0%B8%D0%BE%D1%82%D0%B5%D0%BA)
-### Обновление
-- Рекомендую всегда обновлять библиотеку: в новых версиях исправляются ошибки и баги, а также проводится оптимизация и добавляются новые фичи
-- Через менеджер библиотек IDE: найти библиотеку как при установке и нажать "Обновить"
-- Вручную: **удалить папку со старой версией**, а затем положить на её место новую. "Замену" делать нельзя: иногда в новых версиях удаляются файлы, которые останутся при замене и могут привести к ошибкам!
-
-
-<a id="init"></a>
-## Инициализация
-Нет
-
 <a id="usage"></a>
+
 ## Использование
 ```cpp
-void hardwareEnable(uint16_t data);             // включение указанной периферии (см. ниже "Константы периферии")
-void hardwareDisable(uint16_t data);            // выключение указанной периферии (см. ниже "Константы периферии")
-void setSystemPrescaler(prescalers_t prescaler);// установка делителя системной частоты (см. ниже "Константы делителя")
-void adjustInternalClock(int8_t adj);           // подстройка частоты внутреннего генератора (число -120...+120)
+void hardwareEnable(uint16_t data);               // включение указанной периферии (см. ниже "Константы периферии")
+void hardwareDisable(uint16_t data);              // выключение указанной периферии (см. ниже "Константы периферии")
+void setSystemPrescaler(prescalers_t prescaler);  // установка делителя системной частоты
+void adjustInternalClock(int8_t adj);             // подстройка частоты внутреннего генератора (число -120...+120)
+void bodInSleep(bool en);                         // Brown-out detector в режиме сна (true вкл - false выкл) [умолч. false]
 
-void bodInSleep(bool en);                       // Brown-out detector в режиме сна (true вкл - false выкл) по умолч. отключен!
-void setSleepMode(sleepmodes_t mode);           // установка текущего режима сна (см. ниже "Режимы сна")
-void setSleepResolution(uint8_t period);        // установить разрешение сна (см. ниже "Периоды сна")
+void setSleepMode(sleepmodes_t mode);             // установка текущего режима сна [умолч. POWERDOWN_SLEEP]
+void sleep(sleepprds_t period);                   // сон на стандартный период
+bool inSleep();                                   // вернёт true, если МК спит для проверки в прерывании
 
-void autoCalibrate(void);                       // автоматическая калибровка таймера сна, выполняется 16 мс
-void sleep(uint8_t period);                     // сон на фиксированный период (см. ниже "Периоды сна")
-uint8_t sleepDelay(uint32_t ms);                // сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
-void correctMillis(bool state);                 // корректировать миллис на время сна sleepDelay() (по умолчанию включено)
-void wakeUp(void);                              // помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)	
-bool inSleep(void);                             // вернёт true, если МК спит (для проверки в прерывании)
+uint16_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
+uint16_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
+void setSleepResolution(sleepprds_t period);      // установить разрешение сна sleepDelay() [умолч. SLEEP_128MS]
+void correctMillis(bool state);                   // корректировать миллис на время сна sleepDelay() [умолч. true]
+void calibrate();                                 // автоматическая калибровка таймера сна sleepDelay(), выполняется 16 мс
+void wakeUp();                                    // помогает выйти из sleepDelay() прерыванием (вызывать в будящем прерывании)
 ```
 
 ```cpp
@@ -153,6 +130,7 @@ PWR_LIN		- USART LIN (ATtinyXX)
 **Внимание! power.setSleepResolution() нужно вызывать после калибровки таймера.**
 
 <a id="example"></a>
+
 ## Пример
 Остальные примеры смотри в **examples**!
 ```cpp
@@ -192,7 +170,22 @@ void loop() {
 }
 ```
 
+<a id="install"></a>
+
+## Установка
+- Библиотеку можно найти по названию **GyverPower** и установить через менеджер библиотек в:
+    - Arduino IDE
+    - Arduino IDE v2
+    - PlatformIO
+- [Скачать библиотеку](https://github.com/GyverLibs/GyverPower/archive/refs/heads/main.zip) .zip архивом для ручной установки:
+    - Распаковать и положить в *C:\Program Files (x86)\Arduino\libraries* (Windows x64)
+    - Распаковать и положить в *C:\Program Files\Arduino\libraries* (Windows x32)
+    - Распаковать и положить в *Документы/Arduino/libraries/*
+    - (Arduino IDE) автоматическая установка из .zip: *Скетч/Подключить библиотеку/Добавить .ZIP библиотеку…* и указать скачанный архив
+- Читай более подробную инструкцию по установке библиотек [здесь](https://alexgyver.ru/arduino-first/#%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0_%D0%B1%D0%B8%D0%B1%D0%BB%D0%B8%D0%BE%D1%82%D0%B5%D0%BA)
+
 <a id="versions"></a>
+
 ## Версии
 - v1.2 - фикс калибровки
 - v1.3 - фикс для 32U4
@@ -211,13 +204,3 @@ void loop() {
 ## Баги и обратная связь
 При нахождении багов создавайте **Issue**, а лучше сразу пишите на почту [alex@alexgyver.ru](mailto:alex@alexgyver.ru)  
 Библиотека открыта для доработки и ваших **Pull Request**'ов!
-
-
-При сообщении о багах или некорректной работе библиотеки нужно обязательно указывать:
-- Версия библиотеки
-- Какой используется МК
-- Версия SDK (для ESP)
-- Версия Arduino IDE
-- Корректно ли работают ли встроенные примеры, в которых используются функции и конструкции, приводящие к багу в вашем коде
-- Какой код загружался, какая работа от него ожидалась и как он работает в реальности
-- В идеале приложить минимальный код, в котором наблюдается баг. Не полотно из тысячи строк, а минимальный код

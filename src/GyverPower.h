@@ -1,104 +1,61 @@
-/*
-    GyverPower - библиотека для управления энергопотреблением МК AVR
-    Документация: https://alexgyver.ru/gyverpower/
-    GitHub: https://github.com/GyverLibs/GyverPower
-    Возможности:
-    - Управление системным клоком		
-    - Включение/выключение периферии:
-        - BOD
-        - Таймеры
-        - I2C/UART/SPI
-        - USB
-        - ADC		
-    - Сон в разных режимах (список ниже)		
-    - Сон на любой период
-        - Калибровка таймера для точного времени сна
-        - Корректировка millis()		
-    - Поддерживаемые МК
-        - Atmega2560/32u4/328
-        - Attiny85/84/167
-
-    AlexGyver и Egor 'Nich1con' Zaharov, alex@alexgyver.ru
-    https://alexgyver.ru/
-    MIT License
-    
-    v1.1 от 24.05.2020
-    - Добавлена функция wakeUp для просыпания по прерыванию из sleepDelay (см. пример interruptWakesSleepDelay)
-    - Библиотека обёрнута в класс (несовместимо с версией 1.0!!! Нужно добавить везде power. )
-    - Убраны дефайны (для безопасности)
-    - Добавлена коррекция миллис на время сна
-    - Добавлены примеры и расширенное описание
-    - Улучшена стабильность калибровки (не зависает)
-    
-    v1.2 - фикс калибровки
-    v1.3 - фикс для 32U4
-    v1.4 - добавлен adjustInternalClock
-    v1.5 - совместимость с аттини
-    v1.6 - ещё совместимость с аттини
-    v1.7 - оптимизация, совместимость с ATtiny13
-    v1.8 - совместимость с ATmega32U4
-    v2.0 - оптимизация памяти, переделан sleepDelay, можно точно узнать фактическое время сна
-	v2.0.1 - fix compiler warnings
-    v2.0.2 - исправлена ошибка компиляции ATtiny85
-    v2.1 - добавлена bool inSleep(), для проверки спит ли МК
-    v2.2 - улучшена стабильность
-*/
-
 #ifndef _GyverPower_h
 #define _GyverPower_h
 #include <Arduino.h>
-#include <avr/wdt.h>
 #include <avr/sleep.h>
+#include <avr/wdt.h>
+
 #include "powerConstants.h"
 
 // =============== ФУНКЦИИ ===============
 class GyverPower {
-public:
-    void hardwareEnable(uint16_t data);				// включение указанной периферии (см. ниже "Константы периферии")
-    void hardwareDisable(uint16_t data);			// выключение указанной периферии (см. ниже "Константы периферии")
-    void setSystemPrescaler(prescalers_t prescaler);// установка делителя системной частоты (см. ниже "Константы делителя")
-    void adjustInternalClock(int8_t adj);     		// подстройка частоты внутреннего генератора (число -120...+120)
+   public:
+    void hardwareEnable(uint16_t data);               // включение указанной периферии (см. ниже "Константы периферии")
+    void hardwareDisable(uint16_t data);              // выключение указанной периферии (см. ниже "Константы периферии")
+    void setSystemPrescaler(prescalers_t prescaler);  // установка делителя системной частоты
+    void adjustInternalClock(int8_t adj);             // подстройка частоты внутреннего генератора (число -120...+120)
+    void bodInSleep(bool en);                         // Brown-out detector в режиме сна (true вкл - false выкл) [умолч. false]
+    void setSleepMode(sleepmodes_t mode);             // установка текущего режима сна [умолч. POWERDOWN_SLEEP]
+    void sleep(sleepprds_t period);                   // сон на стандартный период
+    bool inSleep();                                   // вернёт true, если МК спит для проверки в прерывании
     
-    void bodInSleep(bool en);						// Brown-out detector в режиме сна (true вкл - false выкл) по умолч. отключен!
-    void setSleepMode(sleepmodes_t mode);			// установка текущего режима сна (см. ниже "Режимы сна")
-    void setSleepResolution(uint8_t period);        // установить разрешение сна (см. ниже "Периоды сна")
-    
-    void autoCalibrate(void);						// автоматическая калибровка таймера сна, выполняется 16 мс
-    void sleep(uint8_t period);						// сон на фиксированный период (см. ниже "Периоды сна")
-    uint8_t sleepDelay(uint32_t ms);				// сон на произвольный период в миллисекундах (до 52 суток), возвращает остаток времени для коррекции таймеров
-    void correctMillis(bool state);					// корректировать миллис на время сна sleepDelay() (по умолчанию включено)
-    void wakeUp(void);								// помогает выйти из sleepDelay прерыванием (вызывать в будящем прерывании)	
-    bool inSleep(void);                             // вернёт true, если МК спит (для проверки в прерывании)
-    
+    uint16_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
+    uint16_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
+    void setSleepResolution(sleepprds_t period);      // установить разрешение сна sleepDelay() [умолч. SLEEP_128MS]
+    void correctMillis(bool state);                   // корректировать миллис на время сна sleepDelay() [умолч. true]
+    void calibrate();                                 // автоматическая калибровка таймера сна sleepDelay(), выполняется 16 мс
+    void wakeUp();                                    // помогает выйти из sleepDelay() прерыванием (вызывать в будящем прерывании)
+
     // устарело
-    void calibrate(uint16_t ms);					// ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
-    uint16_t getMaxTimeout(void);					// возвращает реальный период "8 секунд", выполняется ~8 секунд
-    
-private:
-    void prepareSleep();
-    void goSleep(uint8_t period);
-    void finishSleep();
+    void autoCalibrate();         // автоматическая калибровка таймера сна, выполняется 16 мс
+    void calibrate(uint16_t ms);  // ручная калибровка тайм-аутов watchdog для sleepDelay (ввести макс период из getMaxTimeout)
+    uint16_t getMaxTimeout();     // возвращает реальный период "8 секунд", выполняется ~8 секунд
+
+   private:
+    void _prepare();
+    void _sleep(sleepprds_t period);
+    void _finish();
     void _wdt_start(uint8_t timeout);
-    
-    volatile bool wakeFlag = false;
-    volatile bool sleepF = 0;
-    bool correct = true;
-    bool bodEnable = false;
-    uint8_t sleepMode = 0x2;	// (POWERDOWN_SLEEP по умолчанию)
-    
-    //uint16_t timeOuts[10] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
-    uint16_t us16 = 16000, step = 128;
-    uint8_t fstep = 0, fcount = 0;
-    uint8_t slpPrd = 3;
+
+    uint16_t _step = 1 << (SLEEP_128MS + 4);
+    uint16_t _us16 = 16000;
+    uint8_t _fstep = 0;
+    sleepprds_t _delayPrd = SLEEP_128MS;
+    sleepmodes_t _sleepMode = POWERDOWN_SLEEP;
+
+    volatile bool _wakeF = false;
+    volatile bool _sleepF = 0;
+    bool _correctF = true;
+    bool _bodEnable = false;
+
 #if defined(__AVR_ATtiny85__)
-    uint8_t pllCopy;
+    uint8_t _pllCopy = 0;
 #endif
 };
 
 extern GyverPower power;
 
 // =============== КОНСТАНТЫ ===============
-/* 
+/*
     ===== РЕЖИМЫ СНА для setSleepMode() =====
     IDLE_SLEEP          - Легкий сон, отключается только клок CPU и Flash, просыпается мгновенно от любых прерываний
     ADC_SLEEP           - Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)
@@ -139,14 +96,14 @@ extern GyverPower power;
     PWR_TIMER2	- Таймер 2
     PWR_TIMER3	- Таймер 3
     PWR_TIMER4	- Таймер 4
-    PWR_TIMER5	- Таймер 5	
+    PWR_TIMER5	- Таймер 5
     PWR_UART0	- Serial 0
     PWR_UART1	- Serial 1
     PWR_UART2	- Serial 2
     PWR_UART3	- Serial 3
     PWR_I2C		- Wire
     PWR_SPI		- SPI
-    PWR_USB		- USB	
+    PWR_USB		- USB
     PWR_USI		- Wire + Spi (ATtinyXX)
     PWR_LIN		- USART LIN (ATtinyXX)
 */

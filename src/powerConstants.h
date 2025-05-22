@@ -2,7 +2,7 @@
 #define powerConstants_h
 
 /* --- system prescaler --- */
-enum prescalers_t {
+enum prescalers_t : uint8_t {
     PRESCALER_1,
     PRESCALER_2,
     PRESCALER_4,
@@ -15,7 +15,7 @@ enum prescalers_t {
 };
 
 /* --- sleep periods --- */
-enum sleepprds_t {
+enum sleepprds_t : uint8_t {
     SLEEP_16MS,
     SLEEP_32MS,
     SLEEP_64MS,
@@ -30,19 +30,19 @@ enum sleepprds_t {
 };
 
 /* --- sleep modes --- */
-enum sleepmodes_t {
-    IDLE_SLEEP	= SLEEP_MODE_IDLE,
+enum sleepmodes_t : uint8_t {
+    IDLE_SLEEP = SLEEP_MODE_IDLE,
     ADC_SLEEP = SLEEP_MODE_ADC,
     POWERDOWN_SLEEP = SLEEP_MODE_PWR_DOWN,
-#if defined (SLEEP_MODE_EXT_STANDBY)
+#if defined(SLEEP_MODE_EXT_STANDBY)
     EXTSTANDBY_SLEEP = SLEEP_MODE_EXT_STANDBY,
-#endif 
-#if defined (SLEEP_MODE_PWR_SAVE)
+#endif
+#if defined(SLEEP_MODE_PWR_SAVE)
     POWERSAVE_SLEEP = SLEEP_MODE_PWR_SAVE,
-#endif 
-#if defined (SLEEP_MODE_STANDBY)
+#endif
+#if defined(SLEEP_MODE_STANDBY)
     STANDBY_SLEEP = SLEEP_MODE_STANDBY
-#endif 
+#endif
 };
 
 /* --- periphery disable / enable --- */
@@ -73,19 +73,16 @@ enum sleepmodes_t {
 #endif
 
 /* Спец. переопределения */
-#if defined (WDTIE)
+#if defined(WDTIE)
 #define WDIE WDTIE
 #endif
 
-#if defined (WDTCR)
+#if defined(WDTCR)
 #define WDTCSR WDTCR
 #endif
 
 /* Поддержка millis-correct */
-#if defined(__AVR_ATmega328P__) \
-|| defined(__AVR_ATmega168__) \
-|| defined(__AVR_ATmega1280__) \
-|| defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 #define MILLIS_CORRECT_IS_SUPPURT
 #endif
 
