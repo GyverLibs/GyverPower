@@ -46,8 +46,8 @@ void setSleepMode(sleepmodes_t mode);             // установка теку
 void sleep(sleepprds_t period);                   // сон на стандартный период
 bool inSleep();                                   // вернёт true, если МК спит для проверки в прерывании
 
-uint16_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
-uint16_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
+uint32_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
+uint32_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
 void setSleepResolution(sleepprds_t period);      // установить разрешение сна sleepDelay() [умолч. SLEEP_128MS]
 void correctMillis(bool state);                   // корректировать миллис на время сна sleepDelay() [умолч. true]
 void calibrate();                                 // автоматическая калибровка таймера сна sleepDelay(), выполняется 16 мс
