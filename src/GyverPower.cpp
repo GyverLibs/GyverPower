@@ -86,11 +86,11 @@ void GyverPower::sleep(sleepprds_t prd) {
 void GyverPower::setSleepResolution(sleepprds_t prd) {
     uint32_t stepUs = (uint32_t)_us16 * (1 << prd);
     _step = stepUs / 1000ul;
-    _fstep = (stepUs % 1000ul) >> 3;
+    _fstep = (stepUs - _step * 1000ul) >> 3;
     _delayPrd = prd;
 }
 
-uint16_t GyverPower::sleepDelay(uint32_t ms, uint32_t sec, uint16_t min, uint16_t hour, uint16_t day) {
+uint32_t GyverPower::sleepDelay(uint32_t ms, uint32_t sec, uint16_t min, uint16_t hour, uint16_t day) {
     if (sec) ms += sec * 1000ul;
     if (min) ms += min * 60 * 1000ul;
     if (hour) ms += hour * 60 * 60 * 1000ul;
@@ -98,7 +98,7 @@ uint16_t GyverPower::sleepDelay(uint32_t ms, uint32_t sec, uint16_t min, uint16_
     return sleepDelay(ms);
 }
 
-uint16_t GyverPower::sleepDelay(uint32_t ms) {
+uint32_t GyverPower::sleepDelay(uint32_t ms) {
 #ifdef MILLIS_CORRECT_IS_SUPPURT
     uint32_t saveMs = ms;
 #endif
