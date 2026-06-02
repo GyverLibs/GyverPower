@@ -1,217 +1,208 @@
-This is an automatic translation, may be incorrect in some places. See sources and examples!
+This is an automatic translation and may be incorrect in some places. See the source README and examples for authoritative information.
 
-# Gyverpower
-Gyverpower - Library for Energy Executive Management MK AVR
-- System shock management
-- Turning on/off the periphery:
-    - Bod
-    - Tiemers
-    - i2c/uart/spi
+[![Foo](https://img.shields.io/badge/Version-2.2-brightgreen.svg?style=flat-square)](#versions)
+[![Foo](https://img.shields.io/badge/Website-AlexGyver.ru-blue.svg?style=flat-square)](https://alexgyver.ru/)
+[![Foo](https://img.shields.io/badge/%E2%82%BD$%E2%82%AC%20%D0%9D%D0%B0%20%D0%BF%D0%B8%D0%B2%D0%BE-%D1%81%20%D1%80%D1%8B%D0%B1%D0%BA%D0%BE%D0%B9-orange.svg?style=flat-square)](https://alexgyver.ru/support_alex/)
+
+[![Foo](https://img.shields.io/badge/README-ENGLISH-brightgreen.svg?style=for-the-badge)](https://github-com.translate.goog/GyverLibs/GyverPower?_x_tr_sl=ru&_x_tr_tl=en)
+
+# GyverPower
+GyverPower – Energy Management Library for MK AVR
+- System clogging management
+- Peripheral on/off:
+    - BOD
+    - Timers.
+    - I2C/UART/SPI
     - USB
-    - ADC
-- sleep in different modes (list below)
-- sleep for any period
-    - Tiemer calibration for the exact time of sleep
-    - adjustment Millis ()
+    - ADC		
+- Sleep in different modes (list below)
+- Sleep for any period
+    - Calibration of the timer for the exact time of sleep
+    - Adjustment millis()
 
-## compatibility
-- Atmega2560/32U4/328
+### Compatibility
+- Atmega2560/32u4/328
 - Attiny85/84/167
 
-### Documentation
-There is [expanded documentation] to the library (https://alexgyver.ru/gyverpower/)
+### Documentation.
+There's a library[extended documentation](https://alexgyver.ru/GyverPower/)
 
-## Content
-- [installation] (# Install)
-- [initialization] (#init)
-- [use] (#usage)
-- [Example] (# Example)
-- [versions] (#varsions)
-- [bugs and feedback] (#fedback)
+## Contents
+- [Use of use](#usage)
+- [Example](#example)
+- [Installation](#install)
+- [Versions](#versions)
+- [Bugs and feedback](#feedback)
 
-<a id="install"> </a>
-## Installation
-- The library can be found by the name ** gyverpower ** and installed through the library manager in:
-    - Arduino ide
-    - Arduino ide v2
-    - Platformio
-- [download the library] (https://github.com/gyverlibs/gyverpower/archive/refs/heads/main.zip) .Zip archive for manual installation:
-    - unpack and put in * C: \ Program Files (X86) \ Arduino \ Libraries * (Windows X64)
-    - unpack and put in * C: \ Program Files \ Arduino \ Libraries * (Windows X32)
-    - unpack and put in *documents/arduino/libraries/ *
-    - (Arduino id) Automatic installation from. Zip: * sketch/connect the library/add .Zip library ... * and specify downloaded archive
-- Read more detailed instructions for installing libraries [here] (https://alexgyver.ru/arduino-first/#%D0%A3%D1%81%D1%82%D0%B0%BD%D0%BE%BE%BE%BED0%B2%D0%BA%D0%B0_%D0%B1%D0%B8%D0%B1%D0%BB%D0%B8%D0%BE%D1%82%D0%B5%D0%BA)
-### Update
-- I recommend always updating the library: errors and bugs are corrected in the new versions, as well as optimization and new features are added
-- through the IDE library manager: find the library how to install and click "update"
-- Manually: ** remove the folder with the old version **, and then put a new one in its place.“Replacement” cannot be done: sometimes in new versions, files that remain when replacing are deleted and can lead to errors!
+<a id="usage"></a>
 
+## Use of use
+```cpp
+void hardwareEnable(uint16_t data);               // inclusion of said periphery (see below "Peripheral constants")
+void hardwareDisable(uint16_t data);              // turning off the specified periphery (see below "Peripheral constants")
+void setSystemPrescaler(prescalers_t prescaler);  // splitter
+void adjustInternalClock(int8_t adj);             // adjusting the frequency of the internal generator (number -120). +120)
+void bodInSleep(bool en);                         // Brown-out detector in sleep mode (true on - false off)
 
-<a id="init"> </a>
-## initialization
-No
+void setSleepMode(sleepmodes_t mode);             // Setting the current sleep pattern [silence]. POWERDOWN SLEEP
+void sleep(sleepprds_t period);                   // sleep
+bool inSleep();                                   // will return true if the MK is asleep for an interrupt check
 
-<a id="usage"> </a>
-## Usage
-`` `CPP
-VOID Hardwareenable (Uint16_T DATA);// inclusion of the specified periphery (see below the "peripheral constants")
-VOID HardwareDisable (Uint16_T DATA);// Turning off the specified periphery (see below the "Constant of the Periphery")
-VOID SetSystemprescaler (Prescalers_t PressCaler); // Installation of a system frequency divider (see below "Delichela Constant)
-VOID Adjustinternalclock (Int8_T Adj);// adjustment of the frequency of the internal generator (number -120 ...+120)
+uint32_t sleepDelay(uint32_t ms);                 // Sleeping for an arbitrary period in milliseconds returns the rest of the time to adjust timers
+uint32_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
+void setSleepResolution(sleepprds_t period);      // Set the sleepdelay() resolution. SLEEP 128MS
+void correctMillis(bool state);                   // Adjust Millis for SleepDelay() [Silent True]
+void calibrate();                                 // automatic calibration of sleepDelay(), performed 16 ms
+void wakeUp();                                    // Helps to exit sleepDelay() by interruption (call in a future interruption)
+```
 
-VOID BODINSLEP (BOOL EN);// Brown -out Detector in sleep mode (True vkl - False cap) by the silence.Disconnected!
-VOID setsleepmode (Sleepmodes_t Mode);// Installation of the current sleep regime (see below "Sleep modes")
-VOID setsleepResolution (Uint8_t Period);// Set a resolution of sleep (see below the "periods of sleep")
+```cpp
+===== РЕЖИМЫ СНА для setSleepMode() =====
+IDLE_SLEEP          - Легкий сон, отключается только клок CPU и Flash, просыпается мгновенно от любых прерываний
+ADC_SLEEP           - Легкий сон, отключается CPU и system clock, АЦП начинает преобразование при уходе в сон (см. пример ADCinSleep)
+EXTSTANDBY_SLEEP    - Глубокий сон, идентичен POWERSAVE_SLEEP + system clock активен
+STANDBY_SLEEP       - Глубокий сон, идентичен POWERDOWN_SLEEP + system clock активен
+POWERSAVE_SLEEP     - Глубокий сон, идентичен POWERDOWN_SLEEP + timer 2 активен (+ можно проснуться от его прерываний), можно использовать для счета времени (см. пример powersaveMillis)
+POWERDOWN_SLEEP     - Наиболее глубокий сон, отключается всё кроме WDT и внешних прерываний, просыпается от аппаратных (обычных + PCINT) или WDT
 
-VOID autocalibrate (VOID);// Automatic calibration of sleep timer, 16 ms is performed
-VOID Sleep (Uint8_t Period);// sleep for a fixed period (see below "periods of sleep")
-Uint8_t SleepDelay (Uint32_T MS);// Sleep to arbitrary peRiodes in milliseconds (up to 52 days), returns the rest of the time to correct timers
-VOID Correctmillis (Bool State);// Correct millis for sleep time SleepDelay () (by default on)
-VOID Wakeup (VOID);// Helps to leave SleepDelay an interruption (call in a waking interruption)
-Bool Insleep (Void);// will return True if MK sleeps (for verification in interruption)
-`` `
+===== ПЕРИОДЫ СНА для sleep() и setSleepResolution() =====
+SLEEP_16MS
+SLEEP_32MS
+SLEEP_64MS
+SLEEP_128MS
+SLEEP_256MS
+SLEEP_512MS
+SLEEP_1024MS
+SLEEP_2048MS
+SLEEP_4096MS
+SLEEP_8192MS
+SLEEP_FOREVER	- вечный сон
 
-`` `CPP
-===== Sleep modes for setsleepmode () =======
-Idle_sleep - light sleep, only a CPU and Flash clock is turned off, it wakes up instantly from any interruption
-ADC_SLEP is a light dream, CPU and System Clock are disconnected, ADC begins to transform it when leaving (see Adcinsleep example)
-Extstandby_sleep - deep sleep, identical to PowerSave_Sleep + System Clock is active
-Standby_sleep - deep sleep, identical to PowerDown_Sleep + System Clock is active
-PowerSave_Sleep - deep sleep, identical to powerdown_sleep + timer 2 is active ( + you can wake up from its interruptions), you can use time (see example of powerSavemillis)
-PowerDown_Sleep - the deepest sleep, everything is turned off except WDT and external interruptions, wakes up from hardware (ordinary + PCINT) or WDT
+===== КОНСТАНТЫ ДЕЛИТЕЛЯ для setSystemPrescaler() =====
+PRESCALER_1
+PRESCALER_2
+PRESCALER_4
+PRESCALER_8
+PRESCALER_16
+PRESCALER_32
+PRESCALER_64
+PRESCALER_128
+PRESCALER_256
 
-===== Sleep periods for Sleep () and setsleepresolution () ===========
-Sleep_16ms
-Sleep_32MS
-Sleep_64ms
-Sleep_128MS
-Sleep_256MS
-Sleep_512MS
-Sleep_1024ms
-Sleep_2048MS
-Sleep_4096ms
-Sleep_8192MS
-Sleep_Forever - Eternal Dream
+===== КОНСТАНТЫ ПЕРИФЕРИИ для hardwareDisable() и hardwareEnable() =====
+PWR_ALL		- всё железо
+PWR_ADC		- АЦП и компаратор
+PWR_TIMER1	- Таймер 0
+PWR_TIMER0	- Таймер 1
+PWR_TIMER2	- Таймер 2
+PWR_TIMER3	- Таймер 3
+PWR_TIMER4	- Таймер 4
+PWR_TIMER5	- Таймер 5	
+PWR_UART0	- Serial 0
+PWR_UART1	- Serial 1
+PWR_UART2	- Serial 2
+PWR_UART3	- Serial 3
+PWR_I2C		- Wire
+PWR_SPI		- SPI
+PWR_USB		- USB	
+PWR_USI		- Wire + Spi (ATtinyXX)
+PWR_LIN		- USART LIN (ATtinyXX)
+```
 
-===== The divider constant for setsyStemprescaler () ===========
-PressCaler_1
-PressCaler_2
-PressCaler_4
-PressCaler_8
-PressCaler_16
-PressCaler_32
-PressCaler_64
-PressCaler_128
-PressCaler_256
+### Simple sleep.
+- Sleep mode is adjusted in`power.setSleepMode()`by default active`POWERDOWN_SLEEP`(For the rest, see above).
+- We call to sleep.`power.sleep()`with an indication of one of the standard periods (see above).
+- The actual sleep time will be slightly different, as the "sleep timer" is not very accurate.
 
-===== The periphery constants for Hardwareedisable () and Hardwareenable () ==========
-Pwr_all - all iron
-PWR_ADC - ACP and comparator
-PWR_Timer1 - timer 0
-PWR_Timer0 - TIMER 1
-PWR_Timer2 - TIMER 2
-PWR_Timer3 - TIMER 3
-PWR_Timer4 - TIMER 4
-PWR_Timer5 - TIMER 5
-PWR_UART0 - Serial 0
-PWR_UART1 - Serial 1
-PWR_UART2 - Serial 2
-PWR_UART3 - Serial 3
-PWR_I2C - Wire
-PWR_SPI - SPI
-PWR_USB - USB
-PWR_USI - Wire + SPI (Attinyxx)
-PWR_LIN - USART LIN (Attinyxx)
-`` `
+### Sleep for any period
+- Sleep mode is adjusted in`power.setSleepMode()`by default active`POWERDOWN_SLEEP`(For the rest, see above).
+- We call to sleep.`power.sleepDelay()`period in milliseconds (`uint32_t`, up to ~50 days.
+How does it work? Just a cycle with standard sleep periods within that function. *
+- By default, this function sleeps in periods of 128 milliseconds. The waking time between periods of sleep is about 2.2 μs (at 16 MHz).
+This is 0.0017% of sleep time. Accordingly, the accuracy of sleep time is a multiple of one period of sleep. This period can be adjusted to
+`power.setSleepResolution()`which assumes the same constants as`sleep()`. If you need a more accurate sleep, you can put 16 ms.`SLEEP_16MS`), 
+the maximum energy saving is 8 seconds (`SLEEP_8192MS`).
+- For premature awakening by interruption, it is necessary to call`power.wakeUp()`inside the interrupt handler.
+- Son`sleepDelay()`It has two very useful possibilities:
+  - Sleep for a very precise period with a calibrated timer (see below)
+  - Saving time`millis()`during sleep (see example of sleeptime)
 
-### simple sleep
-- Sleep mode is tuned in `Power.setsleepmode ()`, by default, `PowerDown_Sleep` is active (the rest see above).
-- To fall asleep, we call `Power.sleep ()` with one of the standard periods (see above).
-- The real time of sleep will be slightly different, since the "sleep timer" is not very accurate.
+### Timer calibration
+In version 2.0 of the library, calibration was simplified: just call`power.autoCalibrate()`When you start the microcontroller. The function is performed ~16 ms.
+**Warning! power.setSleepResolution() must be called after the timer is calibrated.**
 
-### sleep for any period
-- Sleep mode is tuned in `Power.setsleepmode ()`, by default, `PowerDown_Sleep` is active (the rest see above).
-- To fall asleep, we call `Power.sleepDelay ()` with a period in milliseconds (`uint32_t`, up to ~ 50 days).
-*How it works?Just a cycle with standard periods of sleep inside this function.*
-- By default, this function “sleeps” with periods of 128 milliseconds.The wakefulness between the periods of sleep is about 2.2 μs (at 16 MHz),
-which is 0.0017% of the time of sleep.Accordingly, the accuracy of the time of sleep is multiple of one period of sleep.This period can be configured in
-`Power.SetSleepResolution ()`, which accepts the same constants as `Sleep ()`.If you need a more accurate dream, you can put 16 ms (`Sleep_16MS`),
-If the maximum energy conservation is 8 seconds (`Sleep_8192MS`).
-- For premature awakening for interruption, it is necessary to call `Power.wakeup ()` inside the interruption processor.
-- Sleep `SleepDelay ()` has two very useful opportunities:
-  - sleep for a very accurate period with a calibrated timer (see below)
-  - Preservation of the time account `millis ()` during sleep (see example of Sleeptime)
+<a id="example"></a>
 
-### Tymer Calibration
-In version 2.0 of the library, the calibration was simplified: it is enough to call `Power.autocalibrate ()` when the microcontroller is launched.The function is performed ~ 16 ms.
-**Attention!Power.SetsleepResolution () should be called after calibration of the timer. **
-
-<a id="EXAMPLE"> </a>
 ## Example
-The rest of the examples look at ** Examples **!
-`` `CPP
-// Demo of the library capabilities
-#include <gyverpower.h>
+For more examples see **examples**!
+```cpp
+// Demo library capabilities
+#include <GyverPower.h>
 
-VOID setup () {
-  Pinmode (13, output);// set up inCranberries with LED output
-  Serial.Begin (9600);
+void setup() {
+  pinMode(13, OUTPUT); // Configure the output with LED to the exit
+  Serial.begin(9600);
 
-  Power.autocalibrate ();// Automatic calibration
+  power.autoCalibrate(); // calibration
 
-  // Disconnecting unnecessary periphery
-  Power.hardwardedisable (pwr_adc | pwr_timer1);// see Constant section in gyverpower.h, separating the sign "|
+  // shutdown
+  power.hardwareDisable(PWR_ADC | PWR_TIMER1); // see the constant section in GyverPower.h separating the sign "|"
 
-  // System frequency management
-  Power.SetSySteMprescaler (Prescaler_2);// cm constants in gyverpower.h
+  // frequency control
+  power.setSystemPrescaler(PRESCALER_2); // See constants in GyverPower. h h
   
-  // Sleep settings
-  Power.Setsleepmode (Standby_Sleep);// If you need another sleep mode, cm constants in gyverpower.h (by default PowerDown_Sleep)
-  //power.BodinSleep (False);// It is recommended to turn off BOD in a dream to preserve energy (by default FALSE - already turned off !!)
+  // sleep setting
+  power.setSleepMode(STANDBY_SLEEP); // If you need a different sleep mode, see constants in GyverPower.h (POWERDOWN SLEEP by default)
+  //power.bodInSleep(false) It is recommended to turn off the bod in your sleep to save energy (by default false - already off!!)
 
-  // Example of single care of sleep
-  Serial.println ("Go to Sleep");
-  DELAY (100);// Give the time to send
+  // single-sleeping
+  Serial.println("go to sleep");
+  delay(100); // give time to ship
   
-  Power.sleep (Sleep_2048MS);// Sleep ~ 2 seconds
+  power.sleep(SLEEP_2048MS); // sleep ~ 2 seconds
   
-  Serial.println ("Wake Up!");
-  DELAY (100);// Give the time to send
+  Serial.println("wake up!");
+  delay(100); // give time to ship
 }
 
-VOID loop () {
-  // example of cyclic sleep
-  Power.SleepDelay (1500);// Sleep 1.5 seconds
-  DigitalWrite (13,! DigitalRead (13));// Inverting the condition on the pin
+void loop() {
+  // cyclic sleep
+  power.sleepDelay(1500);               // sleep 1.5 seconds
+  digitalWrite(13, !digitalRead(13));   // invert the state on the pin
 }
-`` `
+```
 
-<a id="versions"> </a>
-## versions
-- V1.2 - Calibration Fix
-- V1.3 - Fix for 32U4
-- v1.4 - Adjustinternalclock added
-- V1.5 - compatibility with Attini
-- V1.6 - more compatibility with Attini
-- V1.7 - optimization, compatibility with Attiny13
-- V1.8 - Compatibility with atmega32u4
-- V2.0 - memory optimization, redepdlavia remoded, you can definitely find out the actual sleep time
-- V2.0.1 - FIX Compiler Warnings
-- v2.0.2 - Fixed compilation error attiny85
-- V2.1 - Added Bool Insleep (), whether MK sleeps for verification
-- V2.2 - Improved stability
+<a id="install"></a>
 
-<a id="feedback"> </a>
-## bugs and feedback
-Create ** Issue ** when you find the bugs, and better immediately write to the mail [alex@alexgyver.ru] (mailto: alex@alexgyver.ru)
-The library is open for refinement and your ** pull Request ** 'ow!
+## Installation
+- The library can be found under the name **GyverPower** and installed through the library manager in:
+    - Arduino IDE
+    - Arduino IDE v2
+    - PlatformIO
+- [Download the library](https://github.com/GyverLibs/GyverPower/archive/refs/heads/main.zip).zip archive for manual installation:
+    - Unpack and put in *C:\Program Files (x86)\Arduino\libraries* (Windows x64)
+    - Unpack and put in *C:\Program Files\Arduino\libraries* (Windows x32)
+    - Unpack and put in *Documents/Arduino/libraries/ *
+    - (Arduino IDE) Automatic installation from .zip: *Sketch/Connect library/Add .ZIP library...* and specify downloaded archive
+- Read more detailed instructions for installing libraries[here](https://alexgyver.ru/arduino-first/#%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0_%D0%B1%D0%B8%D0%B1%D0%BB%D0%B8%D0%BE%D1%82%D0%B5%D0%BA)
 
+<a id="versions"></a>
 
-When reporting about bugs or incorrect work of the library, it is necessary to indicate:
-- The version of the library
-- What is MK used
-- SDK version (for ESP)
-- version of Arduino ide
-- whether the built -in examples work correctly, in which the functions and designs are used, leading to a bug in your code
-- what code has been loaded, what work was expected from it and how it works in reality
-- Ideally, attach the minimum code in which the bug is observed.Not a canvas of a thousand lines, but a minimum code
+## Versions
+- v1.2 - calibration fix
+- v1.3 - fix for 32U4
+- v1.4 Adds adjustInternalClock
+- v1.5 - compatibility with attini
+- v1.6 - still compatible with Attini
+- v1.7 - Optimization, compatibility with ATtiny13
+- v1.8 - Compatibility with ATmega32U4
+- v2.0 - Memory optimization, redesigned sleepDelay, you can accurately know the actual sleep time
+- v2.0.1 - fix compiler warnings
+- v2.0.2 - ATtiny85 compilation error fixed
+- v2.1 - added bool inSleep(), to check if the MK sleeps
+- v2.2 - improved stability
+
+<a id="feedback"></a>
+## Bugs and feedback
+If you find bugs, create **Issue**, or better write to the mail immediately.[alex@alexgyver.ru](mailto:alex@alexgyver.ru)  
+The library is open for revision and your **Pull Requests*!
