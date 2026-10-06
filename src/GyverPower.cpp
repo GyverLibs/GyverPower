@@ -2,7 +2,15 @@
 
 #ifdef MILLIS_CORRECT_IS_SUPPURT
 extern volatile unsigned long timer0_millis;
+
+static void _correctMillis(uint32_t ms) {
+    uint8_t oldSREG = SREG;
+    cli();
+    timer0_millis += ms;
+    SREG = oldSREG;
+}
 #endif
+
 static volatile bool _wdtFlag = false;
 
 // ===================== ЖЕЛЕЗО =====================
@@ -34,8 +42,11 @@ void GyverPower::hardwareDisable(uint16_t data) {
 
 // ===================== КЛОК =====================
 void GyverPower::setSystemPrescaler(prescalers_t prescaler) {
-    CLKPR = (1 << CLKPCE);  // разрешили менять делитель
-    CLKPR = prescaler;      // загрузили новый
+    uint8_t oldSREG = SREG;
+    cli();
+    CLKPR = (1 << CLKPCE);
+    CLKPR = prescaler;
+    SREG = oldSREG;
 }
 
 void GyverPower::adjustInternalClock(int8_t adj) {
@@ -76,25 +87,38 @@ void GyverPower::calibrate() {
     setSleepResolution(_delayPrd);
 }
 
+uint16_t GyverPower::getWdt16Us() {
+    return _us16;
+}
+
 // ===================== СОН =====================
 void GyverPower::sleep(sleepprds_t prd) {
+    _wdtFlag = false;
+
     _prepare();
     _sleep(prd);
     _finish();
+
+#ifdef MILLIS_CORRECT_IS_SUPPURT
+    if (_correctF && _wdtFlag && prd != SLEEP_FOREVER) {
+        uint32_t sleepUs = (uint32_t)_us16 * (1ul << prd);
+        _correctMillis(sleepUs / 1000ul);
+    }
+#endif
 }
 
 void GyverPower::setSleepResolution(sleepprds_t prd) {
-    uint32_t stepUs = (uint32_t)_us16 * (1 << prd);
+    uint32_t stepUs = (uint32_t)_us16 * (1ul << prd);
     _step = stepUs / 1000ul;
-    _fstep = (stepUs - _step * 1000ul) >> 3;
+    _fstep = (stepUs - _step * 1000ul + 4) >> 3;  // +4 /8 - математическое округление
     _delayPrd = prd;
 }
 
 uint32_t GyverPower::sleepDelay(uint32_t ms, uint32_t sec, uint16_t min, uint16_t hour, uint16_t day) {
     if (sec) ms += sec * 1000ul;
-    if (min) ms += min * 60 * 1000ul;
-    if (hour) ms += hour * 60 * 60 * 1000ul;
-    if (day) ms += day * 24 * 60 * 60 * 1000ul;
+    if (min) ms += min * 60ul * 1000;
+    if (hour) ms += hour * 60ul * 60 * 1000;
+    if (day) ms += day * 24ul * 60 * 60 * 1000;
     return sleepDelay(ms);
 }
 
@@ -102,40 +126,61 @@ uint32_t GyverPower::sleepDelay(uint32_t ms) {
 #ifdef MILLIS_CORRECT_IS_SUPPURT
     uint32_t saveMs = ms;
 #endif
+
     uint8_t fcount = 0;
+    bool shortSleep = (ms < _step);
+
     _wakeF = false;
     _prepare();
-    while (ms > _step) {
+
+    // Обычный сон фиксированными периодами
+    while (ms >= _step) {
+        _wdtFlag = false;
         _sleep(_delayPrd);
-        ms -= _step;
-        fcount += _fstep;
-        if (fcount >= (1000 >> 3)) {
-            --ms;
-            fcount -= (1000 >> 3);
-        }
-        if (_wakeF) {
-#ifdef MILLIS_CORRECT_IS_SUPPURT
-            if (_correctF) {
-                uint8_t oldSREG = SREG;
-                cli();
-                timer0_millis += saveMs - ms;
-                SREG = oldSREG;
+
+        if (_wdtFlag) {
+            ms -= _step;
+
+            fcount += _fstep;
+            if (fcount >= (1000 >> 3)) {
+                if (ms) --ms;
+                fcount -= (1000 >> 3);
             }
-#endif
-            _finish();
-            return ms;
+        }
+
+        if (_wakeF) break;
+    }
+
+    // Если запрошенный период меньше resolution, пробуем один раз поспать на ближайшем меньшем периоде WDT
+    if (shortSleep && !_wakeF) {
+        uint8_t prd = _delayPrd;
+        uint32_t maxUs = ms * 1000ul;
+        uint32_t sleepUs = (uint32_t)_us16 << prd;
+
+        // Выбираем максимальный стандартный период, который не превышает запрошенное время
+        while (prd > SLEEP_16MS && sleepUs > maxUs) {
+            --prd;
+            sleepUs >>= 1;
+        }
+
+        // Если даже минимальный период не помещается - не спим
+        if (sleepUs <= maxUs) {
+            _wdtFlag = false;
+            _sleep((sleepprds_t)prd);
+
+            // Время учитываем только после полного периода WDT
+            if (_wdtFlag) {
+                ms -= sleepUs / 1000ul;
+            }
         }
     }
+
 #ifdef MILLIS_CORRECT_IS_SUPPURT
-    if (_correctF) {
-        uint8_t oldSREG = SREG;
-        cli();
-        timer0_millis += saveMs - ms;
-        SREG = oldSREG;
-    }
+    if (_correctF) _correctMillis(saveMs - ms);
 #endif
+
     _finish();
-    return ms;  // вернуть остаток времени
+    return ms;
 }
 
 void GyverPower::wakeUp() {
@@ -158,7 +203,6 @@ void GyverPower::_prepare() {
             ADCSRA &= ~(1 << ADEN);  // Выкл ацп
             ACSR |= (1 << ACD);      // Выкл аналог компаратор
     }
-
 #if defined(__AVR_ATtiny85__)
     // Принудительное отключение PLL
     _pllCopy = PLLCSR;       // Запомнили настройки
@@ -167,20 +211,28 @@ void GyverPower::_prepare() {
 }
 
 void GyverPower::_sleep(sleepprds_t period) {
-    if (period != SLEEP_FOREVER) _wdt_start(period);
-    set_sleep_mode(_sleepMode);    // Настраиваем нужный режим сна
-    sleep_enable();                // Разрешаем сон
-    if (_bodEnable) interrupts();  // для БОД, если он включен
+    if (period != SLEEP_FOREVER) {
+        _wdt_start(period);
+    }
+
+    set_sleep_mode(_sleepMode);  // Настраиваем нужный режим сна
+    noInterrupts();              // Запрет прерываний
+    sleep_enable();              // Разрешаем сон
+
 #if defined(sleep_bod_disable)
-    else {
-        noInterrupts();       // Запрет прерываний
+    if (!_bodEnable) {
         sleep_bod_disable();  // Выключаем BOD
-        interrupts();         // Разрешаем прерывания
     }
 #endif
-    sleep_cpu();      //  <<< точка ухода в сон
-    wdt_disable();    // выкл пса
-    wdt_reset();      // сброс пса
+
+    interrupts();  // Разрешаем прерывания
+    sleep_cpu();   //  <<< точка ухода в сон
+
+    if (period != SLEEP_FOREVER) {
+        wdt_disable();  // выкл пса
+        wdt_reset();    // сброс пса
+    }
+
     sleep_disable();  // Запрещаем сон
 }
 
@@ -193,11 +245,10 @@ void GyverPower::_finish() {
     }
 #else
     if (!(PRR & (1 << PRADC))) {  // если ацп не выключен принудительно
-        ADCSRA |= (1 << ADEN);    // вкл после сна
+        ADCSRA |= (1 << ADEN);    // вкл после сна TODO
         ACSR &= ~(1 << ACD);
     }
 #endif
-
     // Восстановление настроек PLL (для тини85)
 #if defined(__AVR_ATtiny85__)
     PLLCSR = _pllCopy;
@@ -212,7 +263,7 @@ void GyverPower::_wdt_start(uint8_t timeout) {
 }
 
 ISR(WDT_vect) {       // просыпаемся тут
-    _wdtFlag = true;  // для калибровки
+    _wdtFlag = true;  // для калибровки и определения полного периода sleepDelay
 }
 
 GyverPower power = GyverPower();

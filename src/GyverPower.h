@@ -1,5 +1,4 @@
-#ifndef _GyverPower_h
-#define _GyverPower_h
+#pragma once
 #include <Arduino.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
@@ -17,13 +16,13 @@ class GyverPower {
     void setSleepMode(sleepmodes_t mode);             // установка текущего режима сна [умолч. POWERDOWN_SLEEP]
     void sleep(sleepprds_t period);                   // сон на стандартный период
     bool inSleep();                                   // вернёт true, если МК спит для проверки в прерывании
-    
-    uint32_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
-    uint32_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
     void setSleepResolution(sleepprds_t period);      // установить разрешение сна sleepDelay() [умолч. SLEEP_128MS]
     void correctMillis(bool state);                   // корректировать миллис на время сна sleepDelay() [умолч. true]
     void calibrate();                                 // автоматическая калибровка таймера сна sleepDelay(), выполняется 16 мс
+    uint16_t getWdt16Us();                            // получить калиброванные 16 миллисекунд сна в микросекундах
     void wakeUp();                                    // помогает выйти из sleepDelay() прерыванием (вызывать в будящем прерывании)
+    uint32_t sleepDelay(uint32_t ms);                 // сон на произвольный период в миллисекундах, возвращает остаток времени для коррекции таймеров
+    uint32_t sleepDelay(uint32_t ms, uint32_t sec, uint16_t min = 0, uint16_t hour = 0, uint16_t day = 0);
 
     // устарело
     void autoCalibrate();         // автоматическая калибровка таймера сна, выполняется 16 мс
@@ -107,4 +106,3 @@ extern GyverPower power;
     PWR_USI		- Wire + Spi (ATtinyXX)
     PWR_LIN		- USART LIN (ATtinyXX)
 */
-#endif
